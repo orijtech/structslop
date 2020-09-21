@@ -3,7 +3,9 @@ package structslop
 import (
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/types"
+	"sort"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -38,26 +40,31 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		if r := malign(styp); r.Slop() {
-			pass.Report(analysis.Diagnostic{
-				Pos:     n.Pos(),
-				End:     n.End(),
-				Message: fmt.Sprintf("%v has size %d, could be %d, rearrange to %v for optimal size", styp, r.oldSize, r.newSize, r.suggestedStruct),
-				SuggestedFixes: []analysis.SuggestedFix{{
-					Message: fmt.Sprintf("Rearrange struct fields: %v", r.suggestedStruct),
-					TextEdits: []analysis.TextEdit{
-						{
-							Pos:     n.Pos(),
-							End:     n.End(),
-							NewText: []byte(fmt.Sprintf("%v", r.suggestedStruct)),
-						},
-					},
-				}},
-			})
+		r := checkSlop(styp)
+		if !r.Slop() {
+			return
 		}
+
+		pass.Report(analysis.Diagnostic{
+			Pos:     n.Pos(),
+			End:     n.End(),
+			Message: fmt.Sprintf("%v has size %d, could be %d, rearrange to %v for optimal size", styp, r.oldSize, r.newSize, r.suggestedStruct),
+			SuggestedFixes: []analysis.SuggestedFix{{
+				Message: fmt.Sprintf("Rearrange struct fields: %v", r.suggestedStruct),
+				TextEdits: []analysis.TextEdit{
+					{
+						Pos:     n.Pos(),
+						End:     n.End(),
+						NewText: []byte(fmt.Sprintf("%v", r.suggestedStruct)),
+					},
+				},
+			}},
+		})
 	})
 	return nil, nil
 }
+
+var sizes = types.SizesFor(build.Default.Compiler, build.Default.GOARCH)
 
 type result struct {
 	oldSize         int64
@@ -67,4 +74,46 @@ type result struct {
 
 func (r result) Slop() bool {
 	return r.oldSize > r.newSize
+}
+
+func checkSlop(origStruct *types.Struct) result {
+	optStruct := optimizeStructSize(origStruct)
+	return result{
+		oldSize:         sizes.Sizeof(origStruct),
+		newSize:         sizes.Sizeof(optStruct),
+		suggestedStruct: optStruct,
+	}
+}
+
+func optimizeStructSize(s *types.Struct) *types.Struct {
+	nf := s.NumFields()
+	fields := make([]*types.Var, nf)
+	for i := 0; i < nf; i++ {
+		fields[i] = s.Field(i)
+	}
+
+	sort.Slice(fields, func(i, j int) bool {
+		ti, tj := fields[i].Type(), fields[j].Type()
+		si, sj := sizes.Sizeof(ti), sizes.Sizeof(tj)
+
+		if si == 0 && sj != 0 {
+			return true
+		}
+		if sj == 0 && si != 0 {
+			return false
+		}
+
+		ai, aj := sizes.Alignof(ti), sizes.Alignof(tj)
+		if ai != aj {
+			return ai > aj
+		}
+
+		if si != sj {
+			return si > sj
+		}
+
+		return false
+	})
+
+	return types.NewStruct(fields, nil)
 }
