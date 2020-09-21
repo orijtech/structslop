@@ -11,7 +11,7 @@ type s2 struct {
 	j int
 }
 
-type s3 struct { // want "struct{x uint32; y uint64; z uint32} has size 24, could be 16"
+type s3 struct { // want "struct{x uint32; y uint64; z uint32} has size 24, could be 16, rearrange to struct{y uint64; x uint32; z uint32} for optimal size"
 	x uint32
 	y uint64
 	z uint32
