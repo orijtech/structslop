@@ -1,7 +1,9 @@
 package structslop
 
 import (
+	"fmt"
 	"go/ast"
+	"go/types"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -25,11 +27,44 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		(*ast.StructType)(nil),
 	}
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		s := n.(*ast.StructType)
-		if s.Fields.NumFields() < 2 {
+		atyp := n.(*ast.StructType)
+		styp, ok := pass.TypesInfo.Types[atyp].Type.(*types.Struct)
+		// Type information may be incomplete.
+		if !ok {
 			return
 		}
-		pass.Reportf(s.Pos(), "not implemented")
+
+		if styp.NumFields() < 2 {
+			return
+		}
+
+		if r := malign(styp); r.Slop() {
+			pass.Report(analysis.Diagnostic{
+				Pos:     n.Pos(),
+				End:     n.End(),
+				Message: fmt.Sprintf("%v has size %d, could be %d", styp, r.oldSize, r.newSize),
+				SuggestedFixes: []analysis.SuggestedFix{{
+					Message: fmt.Sprintf("Rearrange struct fields: %v", r.suggestedStruct),
+					TextEdits: []analysis.TextEdit{
+						{
+							Pos:     n.Pos(),
+							End:     n.End(),
+							NewText: []byte(fmt.Sprintf("%v", r.suggestedStruct)),
+						},
+					},
+				}},
+			})
+		}
 	})
 	return nil, nil
+}
+
+type result struct {
+	oldSize         int64
+	newSize         int64
+	suggestedStruct *types.Struct
+}
+
+func (r result) Slop() bool {
+	return r.oldSize > r.newSize
 }
