@@ -35,10 +35,11 @@ type s struct {
 				styp := tv.Type.(*types.Struct)
 				optStruct := optimalStructArrangement(styp)
 				if optStruct.Field(0) != styp.Field(0) {
-					t.Logf("%v field order changed", styp.Field(0))
+					t.Errorf("%v field order changed", styp.Field(0))
 				}
 			}
 		}
+
 		return true
 	})
 }
