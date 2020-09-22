@@ -87,7 +87,6 @@ func checkSloppy(origStruct *types.Struct) result {
 
 func optimalStructArrangement(s *types.Struct) *types.Struct {
 	nf := s.NumFields()
-	// TODO (cuonglm): for struct has first field is "_ [0]func()", we should not move it.
 	fields := make([]*types.Var, nf)
 	for i := 0; i < nf; i++ {
 		fields[i] = s.Field(i)
