@@ -40,8 +40,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		r := checkSlop(styp)
-		if !r.Slop() {
+		r := checkSloppy(styp)
+		if !r.sloppy() {
 			return
 		}
 
@@ -72,12 +72,12 @@ type result struct {
 	suggestedStruct *types.Struct
 }
 
-func (r result) Slop() bool {
+func (r result) sloppy() bool {
 	return r.oldSize > r.newSize
 }
 
-func checkSlop(origStruct *types.Struct) result {
-	optStruct := optimizeStructSize(origStruct)
+func checkSloppy(origStruct *types.Struct) result {
+	optStruct := optimalStructArrangement(origStruct)
 	return result{
 		oldSize:         sizes.Sizeof(origStruct),
 		newSize:         sizes.Sizeof(optStruct),
@@ -85,7 +85,7 @@ func checkSlop(origStruct *types.Struct) result {
 	}
 }
 
-func optimizeStructSize(s *types.Struct) *types.Struct {
+func optimalStructArrangement(s *types.Struct) *types.Struct {
 	nf := s.NumFields()
 	fields := make([]*types.Var, nf)
 	for i := 0; i < nf; i++ {
