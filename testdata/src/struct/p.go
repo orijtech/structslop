@@ -14,6 +14,8 @@
 
 package p
 
+import "net/http/httptest"
+
 type s struct{}
 
 type s1 struct {
@@ -37,4 +39,10 @@ type s4 struct { // want `struct{.+} has size 32, could be 20, rearrange to stru
 	i2 int
 	a3 [3]bool
 	_  [0]func()
+}
+
+type s5 struct { // want `struct{.+} has size 24, could be 20, rearrange to struct{y uint64; z \*httptest.Server; x uint32} for optimal size`
+	x uint32
+	y uint64
+	z *httptest.Server
 }
