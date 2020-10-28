@@ -49,7 +49,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if !ok {
 			return
 		}
-
 		if styp.NumFields() < 2 {
 			return
 		}
@@ -59,10 +58,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
+		curPkgPath := pass.Pkg.Path()
+		oldStyp := formatStruct(styp, curPkgPath)
+		optStyp := formatStruct(r.suggestedStruct, curPkgPath)
+		msg := fmt.Sprintf("%s has size %d, could be %d, rearrange to %s for optimal size", oldStyp, r.oldSize, r.newSize, optStyp)
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),
-			Message:        fmt.Sprintf("%s has size %d, could be %d, rearrange to %s for optimal size", formatStruct(styp), r.oldSize, r.newSize, formatStruct(r.suggestedStruct)),
+			Message:        msg,
 			SuggestedFixes: nil,
 		})
 	})
@@ -123,6 +126,12 @@ func optimalStructArrangement(s *types.Struct) *types.Struct {
 	return types.NewStruct(fields, nil)
 }
 
-func formatStruct(styp *types.Struct) string {
-	return types.TypeString(styp, func(p *types.Package) string { return p.Name() })
+func formatStruct(styp *types.Struct, curPkgPath string) string {
+	qualifier := func(p *types.Package) string {
+		if p.Path() == curPkgPath {
+			return ""
+		}
+		return p.Name()
+	}
+	return types.TypeString(styp, qualifier)
 }

@@ -46,3 +46,9 @@ type s5 struct { // want `struct{.+} has size 24, could be 20, rearrange to stru
 	y uint64
 	z *httptest.Server
 }
+
+type s6 struct { // want `struct{.+} has size 24, could be 20, rearrange to struct{y uint64; z \*s; x uint32} for optimal size`
+	x uint32
+	y uint64
+	z *s
+}
