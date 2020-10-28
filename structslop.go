@@ -62,7 +62,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),
-			Message:        fmt.Sprintf("%v has size %d, could be %d, rearrange to %v for optimal size", styp, r.oldSize, r.newSize, r.suggestedStruct),
+			Message:        fmt.Sprintf("%s has size %d, could be %d, rearrange to %s for optimal size", formatStruct(styp), r.oldSize, r.newSize, formatStruct(r.suggestedStruct)),
 			SuggestedFixes: nil,
 		})
 	})
@@ -121,4 +121,8 @@ func optimalStructArrangement(s *types.Struct) *types.Struct {
 	})
 
 	return types.NewStruct(fields, nil)
+}
+
+func formatStruct(styp *types.Struct) string {
+	return types.TypeString(styp, func(p *types.Package) string { return p.Name() })
 }
