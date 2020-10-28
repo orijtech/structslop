@@ -60,19 +60,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 
 		pass.Report(analysis.Diagnostic{
-			Pos:     n.Pos(),
-			End:     n.End(),
-			Message: fmt.Sprintf("%v has size %d, could be %d, rearrange to %v for optimal size", styp, r.oldSize, r.newSize, r.suggestedStruct),
-			SuggestedFixes: []analysis.SuggestedFix{{
-				Message: fmt.Sprintf("Rearrange struct fields: %v", r.suggestedStruct),
-				TextEdits: []analysis.TextEdit{
-					{
-						Pos:     n.Pos(),
-						End:     n.End(),
-						NewText: []byte(fmt.Sprintf("%v", r.suggestedStruct)),
-					},
-				},
-			}},
+			Pos:            n.Pos(),
+			End:            n.End(),
+			Message:        fmt.Sprintf("%v has size %d, could be %d, rearrange to %v for optimal size", styp, r.oldSize, r.newSize, r.suggestedStruct),
+			SuggestedFixes: nil,
 		})
 	})
 	return nil, nil
