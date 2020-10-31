@@ -37,6 +37,14 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
+	// Use custom sizes instance, which implements types.Sizes for calculating struct size.
+	// go/types and gc does not agree about the struct size.
+	// See https://github.com/golang/go/issues/14909#issuecomment-199936232
+	pass.TypesSizes = &sizes{
+		stdSizes: types.SizesFor(build.Default.Compiler, build.Default.GOARCH),
+		maxAlign: pass.TypesSizes.Alignof(types.Typ[types.UnsafePointer]),
+	}
+
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	nodeFilter := []ast.Node{
@@ -53,7 +61,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		r := checkSloppy(styp)
+		r := checkSloppy(pass, styp)
 		if !r.sloppy() {
 			return
 		}
@@ -72,8 +80,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-var sizes = types.SizesFor(build.Default.Compiler, build.Default.GOARCH)
-
 type result struct {
 	oldSize         int64
 	newSize         int64
@@ -84,16 +90,16 @@ func (r result) sloppy() bool {
 	return r.oldSize > r.newSize
 }
 
-func checkSloppy(origStruct *types.Struct) result {
-	optStruct := optimalStructArrangement(origStruct)
+func checkSloppy(pass *analysis.Pass, origStruct *types.Struct) result {
+	optStruct := optimalStructArrangement(pass.TypesSizes, origStruct)
 	return result{
-		oldSize:         sizes.Sizeof(origStruct),
-		newSize:         sizes.Sizeof(optStruct),
+		oldSize:         pass.TypesSizes.Sizeof(origStruct),
+		newSize:         pass.TypesSizes.Sizeof(optStruct),
 		suggestedStruct: optStruct,
 	}
 }
 
-func optimalStructArrangement(s *types.Struct) *types.Struct {
+func optimalStructArrangement(sizes types.Sizes, s *types.Struct) *types.Struct {
 	nf := s.NumFields()
 	fields := make([]*types.Var, nf)
 	for i := 0; i < nf; i++ {

@@ -27,13 +27,13 @@ type s2 struct {
 	j int
 }
 
-type s3 struct { // want "struct{.+} has size 20, could be 16, rearrange to struct{y uint64; x uint32; z uint32} for optimal size"
+type s3 struct { // want "struct{.+} has size 24, could be 16, rearrange to struct{y uint64; x uint32; z uint32} for optimal size"
 	x uint32
 	y uint64
 	z uint32
 }
 
-type s4 struct { // want `struct{.+} has size 32, could be 20, rearrange to struct{_ \[0\]func\(\); i1 int; i2 int; a3 \[3\]bool; b bool} for optimal size`
+type s4 struct { // want `struct{.+} has size 40, could be 24, rearrange to struct{_ \[0\]func\(\); i1 int; i2 int; a3 \[3\]bool; b bool} for optimal size`
 	b  bool
 	i1 int
 	i2 int
@@ -41,14 +41,22 @@ type s4 struct { // want `struct{.+} has size 32, could be 20, rearrange to stru
 	_  [0]func()
 }
 
-type s5 struct { // want `struct{.+} has size 24, could be 20, rearrange to struct{y uint64; z \*httptest.Server; x uint32} for optimal size`
+type s5 struct { // want `struct{.+} has size 32, could be 24, rearrange to struct{y uint64; z \*httptest.Server; x uint32; t uint32} for optimal size`
 	x uint32
 	y uint64
 	z *httptest.Server
+	t uint32
 }
 
-type s6 struct { // want `struct{.+} has size 24, could be 20, rearrange to struct{y uint64; z \*s; x uint32} for optimal size`
+type s6 struct { // want `struct{.+} has size 32, could be 24, rearrange to struct{y uint64; z \*s; x uint32; t uint32} for optimal size`
 	x uint32
 	y uint64
 	z *s
+	t uint32
+}
+
+type s7 struct { // should be good, see #16
+	bytep *uint8
+	mask  uint8
+	index uintptr
 }
