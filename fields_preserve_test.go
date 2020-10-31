@@ -16,6 +16,7 @@ package structslop
 
 import (
 	"go/ast"
+	"go/build"
 	"go/importer"
 	"go/parser"
 	"go/token"
@@ -43,11 +44,17 @@ type s struct {
 		t.Fatal(err)
 	}
 
+	stdSizes := types.SizesFor(build.Default.Compiler, build.Default.GOARCH)
+	sizes := &sizes{
+		stdSizes: stdSizes,
+		maxAlign: stdSizes.Alignof(types.Unsafe.Scope().Lookup("Pointer").(*types.TypeName).Type()),
+	}
+
 	ast.Inspect(f, func(n ast.Node) bool {
 		if atyp, ok := n.(*ast.StructType); ok {
 			if tv, ok := info.Types[atyp]; ok {
 				styp := tv.Type.(*types.Struct)
-				optStruct := optimalStructArrangement(styp)
+				optStruct := optimalStructArrangement(sizes, styp)
 				if optStruct.Field(0) != styp.Field(0) {
 					t.Errorf("%v field order changed", styp.Field(0))
 				}
