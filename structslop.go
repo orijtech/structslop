@@ -67,9 +67,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 
 		curPkgPath := pass.Pkg.Path()
-		oldStyp := formatStruct(styp, curPkgPath)
 		optStyp := formatStruct(r.suggestedStruct, curPkgPath)
-		msg := fmt.Sprintf("%s has size %d, could be %d, rearrange to %s for optimal size", oldStyp, r.oldSize, r.newSize, optStyp)
+		msg := fmt.Sprintf("struct has size %d, could be %d, rearrange to %s for optimal size", r.oldSize, r.newSize, optStyp)
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),
