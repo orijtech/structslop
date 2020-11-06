@@ -68,7 +68,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 		curPkgPath := pass.Pkg.Path()
 		optStyp := formatStruct(r.suggestedStruct, curPkgPath)
-		msg := fmt.Sprintf("struct has size %d, could be %d, rearrange to %s for optimal size", r.oldSize, r.newSize, optStyp)
+		msg := fmt.Sprintf(
+			"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size",
+			r.oldGcSize,
+			r.oldRuntimeSize,
+			r.newGcSize,
+			r.newRuntimeSize,
+			optStyp,
+		)
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),
@@ -80,22 +87,27 @@ func run(pass *analysis.Pass) (interface{}, error) {
 }
 
 type result struct {
-	oldSize         int64
-	newSize         int64
+	oldGcSize       int64
+	newGcSize       int64
+	oldRuntimeSize  int64
+	newRuntimeSize  int64
 	suggestedStruct *types.Struct
 }
 
 func (r result) sloppy() bool {
-	return r.oldSize > r.newSize
+	return r.oldRuntimeSize > r.newRuntimeSize
 }
 
 func checkSloppy(pass *analysis.Pass, origStruct *types.Struct) result {
 	optStruct := optimalStructArrangement(pass.TypesSizes, origStruct)
-	return result{
-		oldSize:         pass.TypesSizes.Sizeof(origStruct),
-		newSize:         pass.TypesSizes.Sizeof(optStruct),
+	r := result{
+		oldGcSize:       pass.TypesSizes.Sizeof(origStruct),
+		newGcSize:       pass.TypesSizes.Sizeof(optStruct),
 		suggestedStruct: optStruct,
 	}
+	r.oldRuntimeSize = int64(roundUpSize(uintptr(r.oldGcSize)))
+	r.newRuntimeSize = int64(roundUpSize(uintptr(r.newGcSize)))
+	return r
 }
 
 func optimalStructArrangement(sizes types.Sizes, s *types.Struct) *types.Struct {
