@@ -20,11 +20,18 @@ import (
 	"go/build"
 	"go/types"
 	"sort"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
 )
+
+var includeTestFiles bool
+
+func init() {
+	Analyzer.Flags.BoolVar(&includeTestFiles, "include-test-files", includeTestFiles, "also check test files")
+}
 
 const Doc = `check for structs that can be rearrange fields to provide for maximum space/allocation efficiency`
 
@@ -51,6 +58,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		(*ast.StructType)(nil),
 	}
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
+		if strings.HasSuffix(pass.Fset.File(n.Pos()).Name(), "_test.go") && !includeTestFiles {
+			return
+		}
 		atyp := n.(*ast.StructType)
 		styp, ok := pass.TypesInfo.Types[atyp].Type.(*types.Struct)
 		// Type information may be incomplete.

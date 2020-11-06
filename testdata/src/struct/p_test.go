@@ -12,23 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package structslop_test
+package p
 
-import (
-	"testing"
-
-	"golang.org/x/tools/go/analysis/analysistest"
-
-	"github.com/orijtech/structslop"
-)
-
-func Test(t *testing.T) {
-	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, structslop.Analyzer, "struct")
-}
-
-func TestIncludeTestFiles(t *testing.T) {
-	testdata := analysistest.TestData()
-	_ = structslop.Analyzer.Flags.Set("include-test-files", "true")
-	analysistest.Run(t, testdata, structslop.Analyzer, "include-test-files")
+// This struct is sloppy, but no report here. Test files are ignored by default.
+type ignore struct {
+	x uint32
+	y uint64
+	z uint32
 }
