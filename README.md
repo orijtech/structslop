@@ -16,7 +16,7 @@ Without Go modules:
 
 ```sh
 $ cd $GOPATH/src/github.com/orijtech/structslop
-$ git checkout v0.0.1
+$ git checkout v0.0.2
 $ go get
 $ install ./cmd/structslop
 ```
