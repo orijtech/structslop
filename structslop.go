@@ -69,12 +69,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		curPkgPath := pass.Pkg.Path()
 		optStyp := formatStruct(r.suggestedStruct, curPkgPath)
 		msg := fmt.Sprintf(
-			"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size",
+			"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size (%.2f%% savings)",
 			r.oldGcSize,
 			r.oldRuntimeSize,
 			r.newGcSize,
 			r.newRuntimeSize,
 			optStyp,
+			r.savings(),
 		)
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
@@ -96,6 +97,10 @@ type result struct {
 
 func (r result) sloppy() bool {
 	return r.oldRuntimeSize > r.newRuntimeSize
+}
+
+func (r result) savings() float64 {
+	return float64(r.oldRuntimeSize-r.newRuntimeSize) / float64(r.oldRuntimeSize) * 100
 }
 
 func checkSloppy(pass *analysis.Pass, origStruct *types.Struct) result {
