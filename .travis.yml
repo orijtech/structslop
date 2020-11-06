@@ -5,9 +5,11 @@ go:
   - 1.15.x
   - tip
 
+if: type != push OR branch = master
+
 before_install:
   - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.31.0
 
 script:
-  - golangci-lint run
-  - go test -v
+  - ./ci/run
+

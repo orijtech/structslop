@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Only check build success or not on gotip
+if [ "$TRAVIS_GO_VERSION" = "tip" ]; then
+  go build ./cmd/structslop
+  exit 0
+fi
+
+golangci-lint run
+go test -v
