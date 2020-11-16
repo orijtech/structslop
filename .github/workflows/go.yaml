@@ -2,8 +2,6 @@ name: Go
 
 on:
   push:
-    branches:
-      - master
   pull_request:
 jobs:
   test:
@@ -18,7 +16,14 @@ jobs:
       - run: go test -race -v ./...
   build:
     name: Build
-    runs-on: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      - run: go get golang.org/dl/gotip
+      - run: gotip build ./cmd/structslop
   lint:
     name: Lint
     runs-on: ubuntu-latest
