@@ -54,7 +54,7 @@ type s struct {
 		if atyp, ok := n.(*ast.StructType); ok {
 			if tv, ok := info.Types[atyp]; ok {
 				styp := tv.Type.(*types.Struct)
-				optStruct := optimalStructArrangement(sizes, styp)
+				optStruct := optimalStructArrangement(sizes, mapFieldIdx(styp))
 				if optStruct.Field(0) != styp.Field(0) {
 					t.Errorf("%v field order changed", styp.Field(0))
 				}

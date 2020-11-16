@@ -16,7 +16,7 @@ Without Go modules:
 
 ```sh
 $ cd $GOPATH/src/github.com/orijtech/structslop
-$ git checkout v0.0.3
+$ git checkout v0.0.4
 $ go get
 $ install ./cmd/structslop
 ```
@@ -41,10 +41,40 @@ $ structslop ./testdata/src/struct/p.go
 Sample output:
 
 ```text
-/go/src/github.com/orijtech/structslop/testdata/struct/p.go:30:9: struct has size 24 (size class 32), could be 16 (size class 16), rearrange to struct{y uint64; x uint32; z uint32} for optimal size (50.00% savings)
-/go/src/github.com/orijtech/structslop/testdata/struct/p.go:36:9: struct has size 40 (size class 48), could be 24 (size class 32), rearrange to struct{_ [0]func(); i1 int; i2 int; a3 [3]bool; b bool} for optimal size (33.33% savings)
-/go/src/github.com/orijtech/structslop/testdata/struct/p.go:59:9: struct has size 40 (size class 48), could be 32 (size class 32), rearrange to struct{y uint64; t *httptest.Server; w uint64; x uint32; z uint32} for optimal size (33.33% savings)
-/go/src/github.com/orijtech/structslop/testdata/struct/p.go:67:9: struct has size 40 (size class 48), could be 32 (size class 32), rearrange to struct{y uint64; t *s; w uint64; x uint32; z uint32} for optimal size (33.33% savings)
+/go/src/github.com/orijtech/structslop/testdata/struct/p.go:30:9: struct has size 24 (size class 32), could be 16 (size class 16), you'll save 50.00% if you rearrange it to:
+struct {
+	y uint64
+	x uint32
+	z uint32
+}
+
+/go/src/github.com/orijtech/structslop/testdata/struct/p.go:36:9: struct has size 40 (size class 48), could be 24 (size class 32), you'll save 33.33% if you rearrange it to:
+struct {
+	_  [0]func()
+	i1 int
+	i2 int
+	a3 [3]bool
+	b  bool
+}
+
+/go/src/github.com/orijtech/structslop/testdata/struct/p.go:59:9: struct has size 40 (size class 48), could be 32 (size class 32), you'll save 33.33% if you rearrange it to:
+struct {
+	y uint64
+	t *httptest.Server
+	w uint64
+	x uint32
+	z uint32
+}
+
+/go/src/github.com/orijtech/structslop/testdata/struct/p.go:67:9: struct has size 40 (size class 48), could be 32 (size class 32), you'll save 33.33% if you rearrange it to:
+struct {
+	y uint64
+	t *s
+	w uint64
+	x uint32
+	z uint32
+}
+
 ```
 
 Example, for the first report above, the output meaning:
@@ -85,7 +115,13 @@ However, you can still get this information when you want, using `-verbose` flag
 $ structslop -verbose ./testdata/src/verbose/p.go
 /go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:17:8: struct has size 0 (size class 0)
 /go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:19:9: struct has size 1 (size class 8)
-/go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:23:9: struct has size 32 (size class 32), could be 24 (size class 32), rearrange to struct{y uint64; z *s; x uint32; t uint32} for optimal size
+/go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:23:9: struct has size 32 (size class 32), could be 24 (size class 32), optimal fields order:
+struct {
+	y uint64
+	z *s
+	x uint32
+	t uint32
+}
 ```
  
 ## Development
