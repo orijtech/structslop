@@ -15,9 +15,13 @@
 package structslop
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/format"
+	"go/parser"
+	"go/token"
 	"go/types"
 	"sort"
 	"strings"
@@ -80,33 +84,52 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
+		var buf bytes.Buffer
+		if err := format.Node(&buf, pass.Fset, atyp); err != nil {
+			return
+		}
+		expr, err := parser.ParseExpr(buf.String())
+		if err != nil {
+			return
+		}
+		natyp := expr.(*ast.StructType)
+		fl := make([]*ast.Field, styp.NumFields())
+		for i, idx := range r.optIdx {
+			fl[i] = natyp.Fields.List[idx]
+		}
+		natyp.Fields.List = fl
+
+		buf.Reset()
+		if err := format.Node(&buf, token.NewFileSet(), natyp); err != nil {
+			return
+		}
+
 		var msg string
 		switch {
 		case r.oldGcSize == r.newGcSize:
 			msg = fmt.Sprintf("struct has size %d (size class %d)", r.oldGcSize, r.oldRuntimeSize)
 		case r.oldGcSize != r.newGcSize:
-			curPkgPath := pass.Pkg.Path()
-			optStyp := formatStruct(r.suggestedStruct, curPkgPath)
 			msg = fmt.Sprintf(
-				"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size",
+				"struct has size %d (size class %d), could be %d (size class %d), optimal fields order:\n%s\n",
 				r.oldGcSize,
 				r.oldRuntimeSize,
 				r.newGcSize,
 				r.newRuntimeSize,
-				optStyp,
+				buf.String(),
 			)
 			if r.sloppy() {
 				msg = fmt.Sprintf(
-					"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size (%.2f%% savings)",
+					"struct has size %d (size class %d), could be %d (size class %d), you'll save %.2f%% if you rearrange it to:\n%s\n",
 					r.oldGcSize,
 					r.oldRuntimeSize,
 					r.newGcSize,
 					r.newRuntimeSize,
-					optStyp,
 					r.savings(),
+					buf.String(),
 				)
 			}
 		}
+
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),
@@ -118,11 +141,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 }
 
 type result struct {
-	oldGcSize       int64
-	newGcSize       int64
-	oldRuntimeSize  int64
-	newRuntimeSize  int64
-	suggestedStruct *types.Struct
+	oldGcSize      int64
+	newGcSize      int64
+	oldRuntimeSize int64
+	newRuntimeSize int64
+	optStruct      *types.Struct
+	optIdx         []int
 }
 
 func (r result) sloppy() bool {
@@ -133,23 +157,36 @@ func (r result) savings() float64 {
 	return float64(r.oldRuntimeSize-r.newRuntimeSize) / float64(r.oldRuntimeSize) * 100
 }
 
+func mapFieldIdx(s *types.Struct) map[*types.Var]int {
+	m := make(map[*types.Var]int, s.NumFields())
+	for i := 0; i < s.NumFields(); i++ {
+		m[s.Field(i)] = i
+	}
+	return m
+}
+
 func checkSloppy(pass *analysis.Pass, origStruct *types.Struct) result {
-	optStruct := optimalStructArrangement(pass.TypesSizes, origStruct)
+	m := mapFieldIdx(origStruct)
+	optStruct := optimalStructArrangement(pass.TypesSizes, m)
+	idx := make([]int, optStruct.NumFields())
+	for i := range idx {
+		idx[i] = m[optStruct.Field(i)]
+	}
 	r := result{
-		oldGcSize:       pass.TypesSizes.Sizeof(origStruct),
-		newGcSize:       pass.TypesSizes.Sizeof(optStruct),
-		suggestedStruct: optStruct,
+		oldGcSize: pass.TypesSizes.Sizeof(origStruct),
+		newGcSize: pass.TypesSizes.Sizeof(optStruct),
+		optStruct: optStruct,
+		optIdx:    idx,
 	}
 	r.oldRuntimeSize = int64(roundUpSize(uintptr(r.oldGcSize)))
 	r.newRuntimeSize = int64(roundUpSize(uintptr(r.newGcSize)))
 	return r
 }
 
-func optimalStructArrangement(sizes types.Sizes, s *types.Struct) *types.Struct {
-	nf := s.NumFields()
-	fields := make([]*types.Var, nf)
-	for i := 0; i < nf; i++ {
-		fields[i] = s.Field(i)
+func optimalStructArrangement(sizes types.Sizes, m map[*types.Var]int) *types.Struct {
+	fields := make([]*types.Var, len(m))
+	for v, i := range m {
+		fields[i] = v
 	}
 
 	sort.Slice(fields, func(i, j int) bool {
@@ -176,14 +213,4 @@ func optimalStructArrangement(sizes types.Sizes, s *types.Struct) *types.Struct 
 	})
 
 	return types.NewStruct(fields, nil)
-}
-
-func formatStruct(styp *types.Struct, curPkgPath string) string {
-	qualifier := func(p *types.Package) string {
-		if p.Path() == curPkgPath {
-			return ""
-		}
-		return p.Name()
-	}
-	return types.TypeString(styp, qualifier)
 }

@@ -27,13 +27,13 @@ type s2 struct {
 	j int
 }
 
-type s3 struct { // want `struct has size 24 \(size class 32\), could be 16 \(size class 16\), rearrange to struct{y uint64; x uint32; z uint32} for optimal size \(50.00% savings\)`
+type s3 struct { // want `struct has size 24 \(size class 32\), could be 16 \(size class 16\), you'll save 50.00% if you rearrange it to:\nstruct {\n\ty uint64\n\tx uint32\n\tz uint32\n}`
 	x uint32
 	y uint64
 	z uint32
 }
 
-type s4 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 32\), rearrange to struct{_ \[0\]func\(\); i1 int; i2 int; a3 \[3\]bool; b bool} for optimal size \(33.33% savings\)`
+type s4 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
 	b  bool
 	i1 int
 	i2 int
@@ -56,7 +56,7 @@ type s6 struct { // should be good, see #16
 	index uintptr
 }
 
-type s7 struct { // want `struct has size 40 \(size class 48\), could be 32 \(size class 32\), rearrange to struct{y uint64; t \*httptest.Server; w uint64; x uint32; z uint32} for optimal size \(33.33% savings\)`
+type s7 struct { // want `struct has size 40 \(size class 48\), could be 32 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\ty uint64\n\tt \*httptest.Server\n\tw uint64\n\tx uint32\n\tz uint32\n}`
 	x uint32
 	y uint64
 	t *httptest.Server
@@ -64,7 +64,7 @@ type s7 struct { // want `struct has size 40 \(size class 48\), could be 32 \(si
 	w uint64
 }
 
-type s8 struct { // want `struct has size 40 \(size class 48\), could be 32 \(size class 32\), rearrange to struct{y uint64; t \*s; w uint64; x uint32; z uint32} for optimal size \(33.33% savings\)`
+type s8 struct { // want `struct has size 40 \(size class 48\), could be 32 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\ty uint64\n\tt \*s\n\tw uint64\n\tx uint32\n\tz uint32\n}`
 	x uint32
 	y uint64
 	t *s
