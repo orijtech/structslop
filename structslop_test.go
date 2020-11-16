@@ -32,3 +32,9 @@ func TestIncludeTestFiles(t *testing.T) {
 	_ = structslop.Analyzer.Flags.Set("include-test-files", "true")
 	analysistest.Run(t, testdata, structslop.Analyzer, "include-test-files")
 }
+
+func TestVerboseMode(t *testing.T) {
+	testdata := analysistest.TestData()
+	_ = structslop.Analyzer.Flags.Set("verbose", "true")
+	analysistest.Run(t, testdata, structslop.Analyzer, "verbose")
+}

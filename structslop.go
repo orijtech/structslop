@@ -27,10 +27,14 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-var includeTestFiles bool
+var (
+	includeTestFiles bool
+	verbose          bool
+)
 
 func init() {
 	Analyzer.Flags.BoolVar(&includeTestFiles, "include-test-files", includeTestFiles, "also check test files")
+	Analyzer.Flags.BoolVar(&verbose, "verbose", verbose, "print all information, even when struct is not sloppy")
 }
 
 const Doc = `check for structs that can be rearrange fields to provide for maximum space/allocation efficiency`
@@ -67,26 +71,42 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if !ok {
 			return
 		}
-		if styp.NumFields() < 2 {
+		if !verbose && styp.NumFields() < 2 {
 			return
 		}
 
 		r := checkSloppy(pass, styp)
-		if !r.sloppy() {
+		if !verbose && !r.sloppy() {
 			return
 		}
 
-		curPkgPath := pass.Pkg.Path()
-		optStyp := formatStruct(r.suggestedStruct, curPkgPath)
-		msg := fmt.Sprintf(
-			"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size (%.2f%% savings)",
-			r.oldGcSize,
-			r.oldRuntimeSize,
-			r.newGcSize,
-			r.newRuntimeSize,
-			optStyp,
-			r.savings(),
-		)
+		var msg string
+		switch {
+		case r.oldGcSize == r.newGcSize:
+			msg = fmt.Sprintf("struct has size %d (size class %d)", r.oldGcSize, r.oldRuntimeSize)
+		case r.oldGcSize != r.newGcSize:
+			curPkgPath := pass.Pkg.Path()
+			optStyp := formatStruct(r.suggestedStruct, curPkgPath)
+			msg = fmt.Sprintf(
+				"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size",
+				r.oldGcSize,
+				r.oldRuntimeSize,
+				r.newGcSize,
+				r.newRuntimeSize,
+				optStyp,
+			)
+			if r.sloppy() {
+				msg = fmt.Sprintf(
+					"struct has size %d (size class %d), could be %d (size class %d), rearrange to %s for optimal size (%.2f%% savings)",
+					r.oldGcSize,
+					r.oldRuntimeSize,
+					r.newGcSize,
+					r.newRuntimeSize,
+					optStyp,
+					r.savings(),
+				)
+			}
+		}
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),

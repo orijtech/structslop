@@ -78,6 +78,15 @@ type s2 struct {
 ```
 
 have the same size class `32`, though `s2` layout is only `24` byte in size.
+
+However, you can still get this information when you want, using `-verbose` flag:
+
+```sh
+$ structslop -verbose ./testdata/src/verbose/p.go
+/go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:17:8: struct has size 0 (size class 0)
+/go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:19:9: struct has size 1 (size class 8)
+/go/src/github.com/orijtech/structslop/testdata/src/verbose/p.go:23:9: struct has size 32 (size class 32), could be 24 (size class 32), rearrange to struct{y uint64; z *s; x uint32; t uint32} for optimal size
+```
  
 ## Development
 
