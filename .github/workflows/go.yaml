@@ -14,8 +14,8 @@ jobs:
           go-version: 1.15
       - run: go version
       - run: go test -race -v ./...
-  build:
-    name: Build
+  build-gotip:
+    name: Build using gotip
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -23,6 +23,7 @@ jobs:
         with:
           go-version: 1.15
       - run: go get golang.org/dl/gotip
+      - run: gotip download
       - run: gotip build ./cmd/structslop
   lint:
     name: Lint
