@@ -1,6 +1,6 @@
 # structslop
 
-[![Build Status](https://travis-ci.com/orijtech/structslop.svg?token=zRGT22WqV6Do9u8mxebC&branch=master)](https://travis-ci.com/orijtech/structslop)
+![Build status](https://github.com/orijtech/structslop/workflows/Go/badge.svg?branch=master)
 
 Package structslop defines an [Analyzer](analyzer_link) that checks struct can be re-arranged fields to get optimal struct size.
 
