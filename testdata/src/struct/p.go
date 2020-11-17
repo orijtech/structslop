@@ -71,3 +71,11 @@ type s8 struct { // want `struct has size 40 \(size class 48\), could be 32 \(si
 	z uint32
 	w uint64
 }
+
+// Struct which combines multiple fields of the same type, see issue #41.
+type s9 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
+	b      bool
+	i1, i2 int
+	a3     [3]bool
+	_      [0]func()
+}

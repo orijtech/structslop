@@ -85,22 +85,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 
 		var buf bytes.Buffer
-		if err := format.Node(&buf, pass.Fset, atyp); err != nil {
-			return
-		}
-		expr, err := parser.ParseExpr(buf.String())
+		expr, err := parser.ParseExpr(formatStruct(r.optStruct, pass.Pkg.Path()))
 		if err != nil {
 			return
 		}
-		natyp := expr.(*ast.StructType)
-		fl := make([]*ast.Field, styp.NumFields())
-		for i, idx := range r.optIdx {
-			fl[i] = natyp.Fields.List[idx]
-		}
-		natyp.Fields.List = fl
-
-		buf.Reset()
-		if err := format.Node(&buf, token.NewFileSet(), natyp); err != nil {
+		if err := format.Node(&buf, token.NewFileSet(), expr.(*ast.StructType)); err != nil {
 			return
 		}
 
@@ -213,4 +202,14 @@ func optimalStructArrangement(sizes types.Sizes, m map[*types.Var]int) *types.St
 	})
 
 	return types.NewStruct(fields, nil)
+}
+
+func formatStruct(styp *types.Struct, curPkgPath string) string {
+	qualifier := func(p *types.Package) string {
+		if p.Path() == curPkgPath {
+			return ""
+		}
+		return p.Name()
+	}
+	return types.TypeString(styp, qualifier)
 }
