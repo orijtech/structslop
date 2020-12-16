@@ -23,9 +23,13 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 
+	"github.com/dave/dst"
+	"github.com/dave/dst/decorator"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -34,11 +38,13 @@ import (
 var (
 	includeTestFiles bool
 	verbose          bool
+	apply            bool
 )
 
 func init() {
 	Analyzer.Flags.BoolVar(&includeTestFiles, "include-test-files", includeTestFiles, "also check test files")
 	Analyzer.Flags.BoolVar(&verbose, "verbose", verbose, "print all information, even when struct is not sloppy")
+	Analyzer.Flags.BoolVar(&apply, "apply", apply, "apply suggested fixes (using -fix won't work)")
 }
 
 const Doc = `check for structs that can be rearrange fields to provide for maximum space/allocation efficiency`
@@ -60,13 +66,24 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		maxAlign: pass.TypesSizes.Alignof(types.Typ[types.UnsafePointer]),
 	}
 
+	dec := decorator.NewDecorator(pass.Fset)
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-
 	nodeFilter := []ast.Node{
+		(*ast.File)(nil),
 		(*ast.StructType)(nil),
 	}
+
+	fileDiags := make(map[string][]byte)
+	var af *ast.File
+	var df *dst.File
+
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		if strings.HasSuffix(pass.Fset.File(n.Pos()).Name(), "_test.go") && !includeTestFiles {
+			return
+		}
+		if f, ok := n.(*ast.File); ok {
+			af = f
+			df, _ = dec.DecorateFile(af)
 			return
 		}
 		atyp := n.(*ast.StructType)
@@ -119,13 +136,61 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			}
 		}
 
+		dtyp := dec.Dst.Nodes[atyp].(*dst.StructType)
+		fields := make([]*dst.Field, 0, len(r.optIdx))
+		dummy := &dst.Field{}
+		for _, f := range dtyp.Fields.List {
+			fields = append(fields, f)
+			if len(f.Names) == 0 {
+				continue
+			}
+			for range f.Names[1:] {
+				fields = append(fields, dummy)
+			}
+		}
+		optFields := make([]*dst.Field, 0, len(r.optIdx))
+		for _, i := range r.optIdx {
+			f := fields[i]
+			if f == dummy {
+				continue
+			}
+			optFields = append(optFields, f)
+		}
+		dtyp.Fields.List = optFields
+
+		var suggested bytes.Buffer
+		if err := decorator.Fprint(&suggested, df); err != nil {
+			return
+		}
 		pass.Report(analysis.Diagnostic{
 			Pos:            n.Pos(),
 			End:            n.End(),
 			Message:        msg,
 			SuggestedFixes: nil,
 		})
+		f := pass.Fset.File(n.Pos())
+		fileDiags[f.Name()] = suggested.Bytes()
 	})
+
+	if !apply {
+		return nil, nil
+	}
+	for fn, content := range fileDiags {
+		fi, err := os.Open(fn)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "failed to open file: %v", err)
+		}
+		st, err := fi.Stat()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "failed to get file stat: %v", err)
+		}
+		if err := fi.Close(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "failed to close file: %v", err)
+		}
+		if err := ioutil.WriteFile(fn, content, st.Mode()); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "failed to write suggested fix to file: %v", err)
+		}
+	}
 	return nil, nil
 }
 

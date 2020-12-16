@@ -124,6 +124,10 @@ struct {
 }
 ```
  
+**Note**
+
+For applying suggested fix, use `-apply` flag, instead of `-fix`.
+
 ## Development
 
 Go 1.15+
