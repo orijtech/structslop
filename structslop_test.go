@@ -15,6 +15,11 @@
 package structslop_test
 
 import (
+	"bytes"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"golang.org/x/tools/go/analysis/analysistest"
@@ -27,14 +32,45 @@ func Test(t *testing.T) {
 	analysistest.Run(t, testdata, structslop.Analyzer, "struct")
 }
 
+func TestApply(t *testing.T) {
+	dir := strings.Join([]string{".", "testdata", "src"}, string(os.PathSeparator))
+	tmpdir, err := ioutil.TempDir(dir, "structslop-test-apply-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpdir)
+	fn := filepath.Join(tmpdir, "p.go")
+	src, _ := ioutil.ReadFile(filepath.Join(".", "testdata", "src", "struct", "p.go"))
+	if err := ioutil.WriteFile(fn, src, 0644); err != nil {
+		t.Fatal(err)
+	}
+	testdata := analysistest.TestData()
+	_ = structslop.Analyzer.Flags.Set("apply", "true")
+	defer func() {
+		_ = structslop.Analyzer.Flags.Set("apply", "false")
+	}()
+	analysistest.Run(t, testdata, structslop.Analyzer, filepath.Base(tmpdir))
+	got, _ := ioutil.ReadFile(fn)
+	expected, _ := ioutil.ReadFile(filepath.Join(".", "testdata", "src", "struct", "p.go.golden"))
+	if !bytes.Equal(expected, got) {
+		t.Errorf("unexpected suggested fix, want:\n%s\ngot:\n%s\n", string(expected), string(got))
+	}
+}
+
 func TestIncludeTestFiles(t *testing.T) {
 	testdata := analysistest.TestData()
 	_ = structslop.Analyzer.Flags.Set("include-test-files", "true")
+	defer func() {
+		_ = structslop.Analyzer.Flags.Set("include-test-files", "false")
+	}()
 	analysistest.Run(t, testdata, structslop.Analyzer, "include-test-files")
 }
 
 func TestVerboseMode(t *testing.T) {
 	testdata := analysistest.TestData()
 	_ = structslop.Analyzer.Flags.Set("verbose", "true")
+	defer func() {
+		_ = structslop.Analyzer.Flags.Set("verbose", "false")
+	}()
 	analysistest.Run(t, testdata, structslop.Analyzer, "verbose")
 }
