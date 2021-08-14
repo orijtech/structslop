@@ -27,13 +27,13 @@ type s2 struct {
 	j int
 }
 
-type s3 struct { // want `struct has size 24 \(size class 32\), could be 16 \(size class 16\), you'll save 50.00% if you rearrange it to:\nstruct {\n\ty uint64\n\tx uint32\n\tz uint32\n}`
+type s3 struct { // want `struct has size 24 \(size class 24\), could be 16 \(size class 16\), you'll save 33.33% if you rearrange it to:\nstruct {\n\ty uint64\n\tx uint32\n\tz uint32\n}`
 	x uint32
 	y uint64
 	z uint32
 }
 
-type s4 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
+type s4 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 24\), you'll save 50.00% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
 	b  bool
 	i1 int
 	i2 int
@@ -43,7 +43,7 @@ type s4 struct { // want `struct has size 40 \(size class 48\), could be 24 \(si
 
 // should be good, the struct has size 32, can be rearrange to have size 24, but runtime allocator
 // allocate the same size class 32.
-type s5 struct {
+type s5 struct { // want `struct has size 32 \(size class 32\), could be 24 \(size class 24\), you'll save 25.00% if you rearrange it to:\nstruct {\n\ty uint64\n\tz \*s\n\tx uint32\n\tt uint32\n}`
 	x uint32
 	y uint64
 	z *s
@@ -73,7 +73,7 @@ type s8 struct { // want `struct has size 40 \(size class 48\), could be 32 \(si
 }
 
 // Struct which combines multiple fields of the same type, see issue #41.
-type s9 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
+type s9 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 24\), you'll save 50.00% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
 	b      bool
 	i1, i2 int
 	a3     [3]bool
@@ -81,7 +81,7 @@ type s9 struct { // want `struct has size 40 \(size class 48\), could be 24 \(si
 }
 
 // Preserve comments.
-type s10 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 32\), you'll save 33.33% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
+type s10 struct { // want `struct has size 40 \(size class 48\), could be 24 \(size class 24\), you'll save 50.00% if you rearrange it to:\nstruct {\n\t_  \[0\]func\(\)\n\ti1 int\n\ti2 int\n\ta3 \[3\]bool\n\tb  bool\n}`
 	b      bool    // b is bool
 	i1, i2 int     // i1, i2 are int
 	a3     [3]bool // a3 is array of bool

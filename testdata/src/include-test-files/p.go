@@ -14,7 +14,7 @@
 
 package p
 
-type s struct { // want `struct has size 24 \(size class 32\), could be 16 \(size class 16\), you'll save 50.00% if you rearrange it to:\nstruct {\n\ty uint64\n\tx uint32\n\tz uint32\n}`
+type s struct { // want `struct has size 24 \(size class 24\), could be 16 \(size class 16\), you'll save 33.33% if you rearrange it to:\nstruct {\n\ty uint64\n\tx uint32\n\tz uint32\n}`
 	x uint32
 	y uint64
 	z uint32

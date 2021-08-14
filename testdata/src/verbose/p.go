@@ -20,7 +20,7 @@ type s1 struct { // want `struct has size 1 \(size class 8\)`
 	b bool
 }
 
-type s3 struct { // want `struct has size 32 \(size class 32\), could be 24 \(size class 32\), optimal fields order:\nstruct {\n\ty uint64\n\tz \*s\n\tx uint32\n\tt uint32\n}`
+type s3 struct { // want `struct has size 32 \(size class 32\), could be 24 \(size class 24\), you'll save 25.00% if you rearrange it to:\nstruct {\n\ty uint64\n\tz \*s\n\tx uint32\n\tt uint32\n}`
 	x uint32
 	y uint64
 	z *s
