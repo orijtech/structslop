@@ -15,6 +15,17 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.16.x
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/src
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - run: go version
       - run: go test -race -v ./...
   build-gotip:
@@ -35,5 +46,3 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.32
