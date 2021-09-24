@@ -125,11 +125,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			)
 			if r.sloppy() {
 				msg = fmt.Sprintf(
-					"struct has size %d (size class %d), could be %d (size class %d), you'll save %.2f%% if you rearrange it to:\n%s\n",
+					"struct has size %d (size class %d), could be %d (size class %d), you'll save %.2f%% (%d bytes) if you rearrange it to:\n%s\n",
 					r.oldGcSize,
 					r.oldRuntimeSize,
 					r.newGcSize,
 					r.newRuntimeSize,
+					r.savingsPercent(),
 					r.savings(),
 					buf.String(),
 				)
@@ -207,8 +208,12 @@ func (r result) sloppy() bool {
 	return r.oldRuntimeSize > r.newRuntimeSize
 }
 
-func (r result) savings() float64 {
-	return float64(r.oldRuntimeSize-r.newRuntimeSize) / float64(r.oldRuntimeSize) * 100
+func (r result) savingsPercent() float64 {
+	return float64(r.savings()) / float64(r.oldRuntimeSize) * 100
+}
+
+func (r result) savings() int64 {
+	return r.oldRuntimeSize - r.newRuntimeSize
 }
 
 func mapFieldIdx(s *types.Struct) map[*types.Var]int {
