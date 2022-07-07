@@ -1,6 +1,6 @@
 module github.com/orijtech/structslop
 
-go 1.15
+go 1.18
 
 require (
 	github.com/dave/dst v0.27.0
