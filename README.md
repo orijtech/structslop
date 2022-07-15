@@ -2,7 +2,7 @@
 
 ![Build status](https://github.com/orijtech/structslop/workflows/Go/badge.svg?branch=master)
 
-Package structslop defines an [Analyzer](analyzer_link) that checks struct can be re-arranged fields to get optimal struct size.
+Package structslop defines an [Analyzer](analyzer_link) that checks if struct fields can be re-arranged to optimize size.
 
 ## Installation
 
@@ -130,7 +130,7 @@ For applying suggested fix, use `-apply` flag, instead of `-fix`.
 
 ## Development
 
-Go 1.15+
+Go 1.18+
 
 ### Running test
 
