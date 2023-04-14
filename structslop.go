@@ -23,7 +23,6 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
@@ -187,7 +186,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		if err := fi.Close(); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "failed to close file: %v", err)
 		}
-		if err := ioutil.WriteFile(fn, content, st.Mode()); err != nil {
+		if err := os.WriteFile(fn, content, st.Mode()); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "failed to write suggested fix to file: %v", err)
 		}
 	}

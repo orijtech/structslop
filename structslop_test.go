@@ -16,7 +16,6 @@ package structslop_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,14 +33,14 @@ func Test(t *testing.T) {
 
 func TestApply(t *testing.T) {
 	dir := strings.Join([]string{".", "testdata", "src"}, string(os.PathSeparator))
-	tmpdir, err := ioutil.TempDir(dir, "structslop-test-apply-")
+	tmpdir, err := os.MkdirTemp(dir, "structslop-test-apply-")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(tmpdir)
 	fn := filepath.Join(tmpdir, "p.go")
-	src, _ := ioutil.ReadFile(filepath.Join(".", "testdata", "src", "struct", "p.go"))
-	if err := ioutil.WriteFile(fn, src, 0644); err != nil {
+	src, _ := os.ReadFile(filepath.Join(".", "testdata", "src", "struct", "p.go"))
+	if err := os.WriteFile(fn, src, 0644); err != nil {
 		t.Fatal(err)
 	}
 	testdata := analysistest.TestData()
@@ -50,8 +49,8 @@ func TestApply(t *testing.T) {
 		_ = structslop.Analyzer.Flags.Set("apply", "false")
 	}()
 	analysistest.Run(t, testdata, structslop.Analyzer, filepath.Base(tmpdir))
-	got, _ := ioutil.ReadFile(fn)
-	expected, _ := ioutil.ReadFile(filepath.Join(".", "testdata", "src", "struct", "p.go.golden"))
+	got, _ := os.ReadFile(fn)
+	expected, _ := os.ReadFile(filepath.Join(".", "testdata", "src", "struct", "p.go.golden"))
 	if !bytes.Equal(expected, got) {
 		t.Errorf("unexpected suggested fix, want:\n%s\ngot:\n%s\n", string(expected), string(got))
 	}
