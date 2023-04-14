@@ -130,7 +130,7 @@ For applying suggested fix, use `-apply` flag, instead of `-fix`.
 
 ## Development
 
-Go 1.18+
+Go 1.20+
 
 ### Running test
 
