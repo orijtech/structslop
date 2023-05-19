@@ -73,3 +73,8 @@ func TestVerboseMode(t *testing.T) {
 	}()
 	analysistest.Run(t, testdata, structslop.Analyzer, "verbose")
 }
+
+func TestGenerated(t *testing.T) {
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, structslop.Analyzer, "generated")
+}
