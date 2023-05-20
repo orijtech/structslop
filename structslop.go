@@ -38,12 +38,14 @@ var (
 	includeTestFiles bool
 	verbose          bool
 	apply            bool
+	generated        bool
 )
 
 func init() {
 	Analyzer.Flags.BoolVar(&includeTestFiles, "include-test-files", includeTestFiles, "also check test files")
 	Analyzer.Flags.BoolVar(&verbose, "verbose", verbose, "print all information, even when struct is not sloppy")
 	Analyzer.Flags.BoolVar(&apply, "apply", apply, "apply suggested fixes (using -fix won't work)")
+	Analyzer.Flags.BoolVar(&generated, "generated", generated, "report issues in generated code")
 }
 
 const Doc = `check for structs that can be rearrange fields to provide for maximum space/allocation efficiency`
@@ -76,8 +78,29 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	var af *ast.File
 	var df *dst.File
 
+	// Track generated files unless -generated is set.
+	genFiles := make(map[*token.File]bool)
+	if !generated {
+	files:
+		for _, f := range pass.Files {
+			for _, c := range f.Comments {
+				for _, l := range c.List {
+					if strings.HasPrefix(l.Text, "// Code generated ") && strings.HasSuffix(l.Text, " DO NOT EDIT.") {
+						file := pass.Fset.File(f.Pos())
+						genFiles[file] = true
+						continue files
+					}
+				}
+			}
+		}
+	}
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		if strings.HasSuffix(pass.Fset.File(n.Pos()).Name(), "_test.go") && !includeTestFiles {
+		file := pass.Fset.File(n.Pos())
+		if strings.HasSuffix(file.Name(), "_test.go") && !includeTestFiles {
+			return
+		}
+		// Skip generated structs if instructed.
+		if !generated && genFiles[file] {
 			return
 		}
 		if f, ok := n.(*ast.File); ok {
