@@ -9,7 +9,7 @@ Package structslop defines an [Analyzer](analyzer_link) that checks if struct fi
 With Go modules:
 
 ```sh
-go get github.com/orijtech/structslop/cmd/structslop
+go install github.com/orijtech/structslop/cmd/structslop@latest
 ```
 
 Without Go modules:
